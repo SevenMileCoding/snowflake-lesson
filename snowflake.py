@@ -229,10 +229,10 @@ def growFlake(startCoords, maxDepth=1, numChildren=2, angleBetweenSiblings=15, s
 			angle = i * angleBetweenSiblings - shift
 			childCoords = transformCoords(p.getCoords(), newOrigin, scalar, angle)
 
-			numChildren = 0
+			numChilds = 0
 			if p.getDepth() < maxDepth:
-				numChildren = p.getNumChildren()
-			newChild = Node(childCoords, numChildren, p.getDepth() + 1)
+				numChilds = p.getNumChildren()
+			newChild = Node(childCoords, numChilds, p.getDepth() + 1)
 
 			stack.append(newChild)
 
