@@ -150,10 +150,9 @@ class Node:
 		max1 = self._funky(max, coords, 1)
 		coords.remove(max1)	
 		max2 = self._funky(max, coords, 1)
-		deltaX = 0.001
+		m = max1[1]
 		if max1[0] - max2[0] != 0:
-			deltaX = max1[0] - max2[0] 
-		m = (max1[1] - max2[1]) / deltaX
+			m = (max1[1] - max2[1]) / deltaX
 		b = max1[1]-m*max1[0]
 		return (m,b)
 
