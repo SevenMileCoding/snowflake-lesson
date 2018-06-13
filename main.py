@@ -1,35 +1,35 @@
-from snowflake import plotPoints as draw, rotatePedal, growFlake, create3dPrintFile
+from snowflake import plotPoints as draw, rotatePetal, growFlake, create3dPrintFile
 
 points = [
-	(2,0),
-	(4,2),
-	(0,2),
-	(2,0)
+	(24,4),
+	(16,4),
+	(16,6),
+	(20,6),
+	(19,7),
+	(20,8),
+	(16,8),
+	(16,10),
+	(24,10),
+	(24,8),
+	(23,7),
+	(24,6),
+	(24,4)
 ]
 
-snowflakePetal = growFlake(points, maxDepth=1, numChildren=2, 
-	angleBetweenSiblings=45, scalar=0.5)
-
-draw(snowflakePetal) # see if you added the points correctly
-
-# Turn your snowflake petal (branch) into a full snowflake
-fullSnowflake = []
-for i in range(0, 6):
-	fullSnowflake +=  rotatePedal(snowflakePetal, angle=(360/6) * i, pivot=(0,0))
-
-#draw(fullSnowflake)
-
-create3dPrintFile(fullSnowflake, 'mysnowflake')
 
 
+snowflakePetal = growFlake(points, maxDepth=3, numChildren=3, 
+	angleBetweenSiblings=15, scalar=0.5)
 
 
+snowflake = []
+numBranches = 6
+for i in range(numBranches):
+	snowflake = snowflake + rotatePetal(snowflakePetal, angle=(360/numBranches)*i, pivot=(24,4))
+	
+	
 
-
-
-
-
-
+draw(snowflake)
 
 
 
