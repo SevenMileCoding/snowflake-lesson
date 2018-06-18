@@ -94,152 +94,11 @@ def rotatePetal(l, angle=15, pivot=(0,0)):
 	return total
 
 
-class Node:
-	"""
-	Not really a node tho
-	"""
-	def __init__(self, coords, numChildren, depth):
-		self.coords = coords
-		self.numChildren = numChildren
-		self.depth = depth
-
-		# store what coordinates define the original top (y) line of the shape
-		coordsCopy = copy.deepcopy(self.coords)
-		max1 = self._funky(max, coordsCopy, 1)
-		coordsCopy.remove(max1)
-		max2 = self._funky(max, coordsCopy, 1)
-
-		self.topline = { 
-			'c1': {
-				'index': self.coords.index(max1),
-				'value': max1
-			},
-			'c2': {
-				'index': self.coords.index(max2),
-				'value': max2
-			}
-		}
-
-		min1 = self._funky(min, coordsCopy, 1)
-		coordsCopy.remove(min1)
-		min2 = self._funky(min, coordsCopy, 1)
-
-		self.bottomline = {
-			'c1': {
-				'index': self.coords.index(min1),
-				'value': min1
-			},
-			'c2': {
-				'index': self.coords.index(min2),
-				'value': min2
-			}
-		}
-
-		
-	def getCoords(self):
-		return self.coords
-
-	def getNumChildren(self):
-		return self.numChildren
-
-	def getWidth(self):
-		return self.maxmin(max, 0)[0] - self.maxmin(min, 0)[0]
-
-	def getHeight(self):
-		return self.maxmin(max, 1)[1] - self.maxmin(min, 1)[1]
-
-	def minX(self):
-		return self.maxmin(min,0)[0]
-	def minY(self):
-		return self.maxmin(min, 1)[1]
-
-	def maxX(self):
-		return self.maxmin(max, 0)[0]
-	def maxY(self):
-		return self.maxmin(max, 1)[1]
-
-	def minXY(self):
-		return self.maxmin(min, 1)
-
-	def maxmin(self, fn, i):
-		return self._funky(fn, self.coords, i)
-
-	def _funky(self, fn, listy, i):
-		return fn(listy, key=lambda item:item[i])
-
-	def getDepth(self):
-		return self.depth
-
-	
-	def getLineInfo(self, c1_index, c2_index, useCoords=False):
-
-		c1 = None
-		c2 = None
-
-		if useCoords == True:
-			c1 = c1_index
-			c2 = c2_index
-		else:
-			c1 = self.coords[c1_index]
-			c2 = self.coords[c2_index]
-
-		m = 0
-		if c1[0] - c2[0] != 0:
-			m = (c1[1] - c2[1]) / (c1[0] - c2[0])
-		b = c1[1]-m*c1[0]
-		mid = ((c1[0]+c2[0]) / 2, (c1[1] + c2[1]) / 2)
-		return {'m': m, 'b': b, 'midpoint': mid, 'c1': c1, 'c2': c2}
-
-
-	def getAbsoluteTop(self):
-		return self.topline
-
-	def getAbsoluteLineInfo(self, side):
-		line = self.bottomline
-		if side == 'top':
-			line = self.topline
-		return self.getLineInfo(line['c1']['index'], line['c2']['index'])
-
-	def getTopLineInfo(self):
-		""" 
-		Returns information about the top (greatest y) line of shape
-		"""
-		coords = copy.deepcopy(self.coords)
-		max1 = self._funky(max, coords, 1)
-		coords.remove(max1)	
-		max2 = self._funky(max, coords, 1)
-		return self.getLineInfo(max1,max2, useCoords=True)
-
-
-
-def transformCoords(coords, newOrigin, scalar, angle):
-
-	# translate to 0,0 for easy scaling and rotation
-	translated = [(x - newOrigin[0], y - newOrigin[1]) for x,y in coords]	
-	scaledCoords = [(x * scalar, y * scalar) for x,y in translated]
-
-	# shift coordinates back (to above the parent node)
-	scaledNode = Node(scaledCoords, 0, 0)
-	height = scaledNode.getHeight()
-	translated = [(x + newOrigin[0], y + newOrigin[1] + height) for x,y in scaledCoords]
-	
-	n = Node(translated, 0, 0)
-	xPiv = n.getAbsoluteLineInfo('bottom')['midpoint'][0]
-
-	# in order to fit children near to the parent, we need to shift them down
-	# new y position is calculated based on the two max's that form the top line of the parent
-	return translated
-	rotated = rotateList(translated, newOrigin, -1*angle)
-	return rotated
-	rNode = Node(rotated, 0, 0)
-	offsetX = rNode.getAbsoluteLineInfo('bottom')['c1'][0] - newOrigin[0]
-	offsetY = rNode.getAbsoluteLineInfo('bottom')['c1'][1] - newOrigin[1]
-	rotated = [(x+offsetX, y-offsetY) for x,y in rotated]
-	return rotated
-
-
+import PointsAlongPolygon as pp
 def getChildrenCoordinates(coords, numChildren, yCutoff):
-	import PointsAlongPolygon as pp
+	"""
+	Figures out points along the polygon (defined by coords) that children can be put at
+	"""
 
 	pointsAbovePerim = []
 	numPointsOnPerim = 0
@@ -263,15 +122,7 @@ def getChildrenCoordinates(coords, numChildren, yCutoff):
 
 # TODO: optimize list so that a straight line isn't split into multiple segments (by user)
 
-# def minMidpoint(coords):
-# 	# returns a coordinate that is the midpoint of the minimum line, 
-# 	# where min is determined by y value
 
-# 	# sort list by y value
-# 	sortedCoords = sorted(coords, key=lambda x: x[1])
-
-# 	p1, p2 = sortedCoords[:2]
-# 	return ((p2[0] + p1[0]) / 2, (p2[1] - p1[1]) / 2)
 
 def min(coords):
 	# returns min y coordniate pair, or midpoint of min line
@@ -286,10 +137,7 @@ def min(coords):
 		return p1 
 
 
-def newFlake(coordinates, origin=None):
-	
-	if origin is None:
-		origin = minMidpoint(coordinates)
+
 
 def transformey(coords, scalars, offsets, localScale=True, origin=None):
 	"""
@@ -321,6 +169,7 @@ def transformey(coords, scalars, offsets, localScale=True, origin=None):
 
 	return newCoords
 
+
 def length(coords, axis):
 	"""
 	Returns the max distance between the points on the given axis
@@ -332,6 +181,7 @@ def length(coords, axis):
 	minn = s[0]
 	maxx = s[-1]
 	return maxx[axis] - minn[axis]
+
 
 def getRotation(endPoints):
 	"""
@@ -350,40 +200,45 @@ def getRotation(endPoints):
 
 
 def grow(coords, numChildren=4, yCutoff=None, origin=None, scalar=0.33):
+	"""
+	Returns all of the transformations for the first iteration of children for coords
+	aka makes numChildren kids of coords, that are scaled and evenly spaced around coords
+
+	coords: [(x1,y1), (x2,y2)....]
+	yCutoff: The y value that children will appear above
+	origin: pivot point for coords
+	scalar: size of child relative to coords
+	"""
 
 	finalCoords = [ ]
 	if yCutoff is None:
 		yCutoff = length(coords, 1) / 2
 	
-	myOrigin = min(coords)
-	if origin is not None:
-		myOrigin = origin
-	
-	origScalar = scalar
-	print('Origin is:', myOrigin)
-	# 1st iteration
-	# how many children? 3
-	#for i in range(numChildren):
 
-	scalar = origScalar #* depth # depth = family generation
+	if origin is None:
+		origin = min(coords)
 
-	scaledCoords = transformey(coords, [scalar, scalar], [0,0], localScale=True, origin=myOrigin) # siblings are the same scale
-	
+	scaledCoords = transformey(coords, [scalar, scalar], [0,0], localScale=True, origin=origin) # siblings are the same scale
 	childTranslations = getChildrenCoordinates(coords, numChildren, yCutoff)
-
 
 	for i in range(numChildren):
 		
 		translateX, translateY = childTranslations[i]['coords']
-		translateX -= myOrigin[0]
-		translateY -= myOrigin[1]
+		translateX -= origin[0]
+		translateY -= origin[1]
 
 		angle = getRotation(childTranslations[i]['lineSegment'])
-		rotatedCoords = rotateList(scaledCoords, myOrigin, angle)
+		rotatedCoords = rotateList(scaledCoords, origin, angle)
 
 		translatedCoords = transformey(rotatedCoords, [1,1], [translateX,translateY], localScale=False)
 		
-		info = {'coords': translatedCoords, 'translation': (translateX, translateY), 'rotation': angle}
+		info = {
+			'coords': translatedCoords, 
+			'translation': (translateX, translateY), 
+			'rotation': angle, 
+			'origin': (translateX + origin[0], translateY + origin[1]),
+			'depth': 1
+		}
 		finalCoords.append(info)
 
 
@@ -391,93 +246,56 @@ def grow(coords, numChildren=4, yCutoff=None, origin=None, scalar=0.33):
 	# then for one child, we take all the children in finalCoords, scale it, rotate and translate it by the amount that that child was
 
 
-def growFlake(startCoords, depth=2, numChildren=3, scalar=0.4):
+def genChild(template, parent, scalar):
+	"""
+	parent is the shape that the child will be placed along. the template is the one of the originally generated versions of the shape (1 of numChildren original children)
+	"""
+	#scalar = scalar ** parent['depth']
+
+	coords = template['coords']
+	x, y = parent['translation']
+	parentOrign = (parent['origin'][0] - x, parent['origin'][1] - y)
+
+	for i in range(parent['depth']):
+		coords = transformey(coords, [scalar, scalar], [0,0], origin=parentOrign)
+		coords = transformey(coords, [1,1], parent['translation'] )
+		coords = rotateList(coords, parent['origin'], parent['rotation'])
+
+	kid = {
+		'coords': coords, 'translation': (x,y), 
+		'rotation': parent['rotation'], 
+		'origin': (x + parentOrign[0], y + parentOrign[1]),
+		'depth': parent['depth'] + 1
+	}
+
+	return kid
+
+
+def growFlake(startCoords, depth=3, numChildren=3, scalar=0.4):
 
 	final = []
-	for i in range(1):#depth):
+	totalNumShapes = depth**numChildren + numChildren + 1
+	base = grow(startCoords, numChildren=numChildren, yCutoff=1, scalar=scalar) # minus startCoords
+	baseCopy = [x for x in base]
 
-		generationStack = grow(startCoords, numChildren=numChildren, yCutoff=1, scalar=scalar)
-		mhm = [x['coords'] for x in generationStack]
-		
-		# child 1
-		grandKids = []
-		child2 = generationStack[2]
-		for x in generationStack:
-			coords = x['coords']
-			coords = transformey(coords, [scalar, scalar], [0,0], origin=min(startCoords))
+	if depth == 1:
+		return [startCoords] + [x['coords'] for x in base]
 
-			coords = transformey(coords, [1,1], child2['translation'])
-			oldOrigin = min(startCoords)
-			x, y = child2['translation']
-			newOrigin = oldOrigin[0] + x, oldOrigin[1] + y
-			print(newOrigin)
-			coords = rotateList(coords, newOrigin, child2['rotation'])
-			grandKids.append(coords)
+	grandKidCoords = []
+	while len(baseCopy) > 0:
+		# if len(baseCopy) > totalNumShapes:
+		# 	break
 
-		final = [startCoords] + mhm + grandKids
-		# while len(generationStack) > 0:
-		# 	sibling = generationStack.pop()
-		# 	x = grow(sibling, numChildren=)
-		# 	hmmm.append(x)
+		parent = baseCopy.pop()
+		if parent['depth'] >= depth:
+			continue
+
+		more = []
+		for template in base: # this makes all the necessary children for a given polygon
+			grandKid = genChild(template, parent, scalar)
+			grandKidCoords.append(grandKid['coords'])
+			baseCopy.append(grandKid)
+
+	final = [startCoords] + [x['coords'] for x in base] + grandKidCoords
 
 	return final
-		
-
-
-
-# def growFlake(startCoords, maxDepth=1, numChildren=2, angleBetweenSiblings=15, scalar=0.5):
-# 	"""
-# 	Grows a set of coordinates to have children like it
-
-# 	startCoords: list of list of tuples [[(x1,y1), (x2,y2), ...], [(x1,y1), (x2,y2), ...] ...]
-# 	- Optional:
-# 	maxDepth: How many generations i.e. 2 = grandma, mom, daughter. Default=1
-# 	numChildren: number of children each generation will have. Default=2
-# 	angleBetweenSiblings: separation between siblings, in degrees. Default=15
-# 	scalar: How much smaller the child will be from its parent. Default=0.5
-# 	"""
-# 	stack = []
-# 	finalCoords = [startCoords]
-# 	root = Node(startCoords, numChildren, 1)
-# 	stack.append(root)
-
-# 	if angleBetweenSiblings == 0:
-# 		angleBetweenSiblings = 1
-# 		# so maxDegree isn't -1
-
-# 	while len(stack) > 0:
-# 		p = stack.pop()
-
-# 		numChildren = p.getNumChildren()
-
-# 		if numChildren <= 0:
-# 			continue
-		
-# 		maxDegree = numChildren * angleBetweenSiblings - 1
-# 		shift = maxDegree /numChildren
-
-# 		for i in range(0, numChildren):
-			
-# 			xOrig = p.getAbsoluteLineInfo('top')['midpoint'][0]
-# 			if numChildren > 1:
-# 				xOrig = p.getAbsoluteLineInfo('top')['c2'][0]  + (p.getWidth() / (numChildren-1)) * i# + p.getWidth()/(numChildren+1)
-# 				#xOrig = p.maxX() + (p.getWidth() / (numChildren-1)) * i - p.getWidth()
-# 			yOrig = p.getAbsoluteLineInfo('top')['midpoint'][1]
-# 			#yOrig = p.getAbsoluteLineInfo('top')['c2'][1]  + (p.getHeight() / (numChildren-1)) - p.getHeight()
-# 			newOrigin = (xOrig, yOrig)
-# 			angle = i * angleBetweenSiblings - shift
-# 			childCoords = transformCoords(p.getCoords(), newOrigin, scalar, angle)
-
-# 			numChilds = 0
-# 			if p.getDepth() < maxDepth:
-# 				numChilds = p.getNumChildren()
-# 			newChild = Node(childCoords, numChilds, p.getDepth() + 1)
-
-# 			stack.append(newChild)
-
-# 			finalCoords.append(childCoords)
-
-# 	return finalCoords
-
-
-
